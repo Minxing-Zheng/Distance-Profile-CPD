@@ -15,8 +15,7 @@ This short guide explains what each major file does.
 - `functions/depth_CPDcpp_ALL.cpp`: C++ implementation of the change-point scan that returns multiple test-statistic variants, used for `dist-CP-F`, `dist-CP-AD`, and `dist-CP`.
 
 ### Baseline wrappers / helpers
-- `functions/ecp_distmat_input.R`: R wrapper for ECP-style methods with distance matrix input.
-- `functions/kcp_distmat_input.R`: R wrapper for kernel CP methods with distance/kernel matrix input.
+- `functions/ecp_distmat_input.R`: R wrapper for energy-CP methods with distance matrix input.
 
 ## `real_data/` 
 
