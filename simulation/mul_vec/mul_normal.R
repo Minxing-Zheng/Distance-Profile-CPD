@@ -25,9 +25,9 @@ library(optparse)
 # source("../../functions/objTest_fctns.R")
 # source("../../functions/depth_CPD_func.R") 
 source("../../functions/ecp_distmat_input.R")
-source("../../functions/kcp_distmat_input.R")
+# source("../../functions/kcp_distmat_input.R")
 source("../../functions/gen_data.R")
-Sigma_list <- make_Sigma_list(c(30, 90, 120))
+Sigma_list <- make_Sigma_list(c(30, 90, 180))
 names(Sigma_list) <- c("S1", "S2", "S3")
 S1 <- Sigma_list$S1
 S2 <- Sigma_list$S2
@@ -47,7 +47,7 @@ registerDoParallel(cl=cl,cores=min(cores[1],11)-1)
 detectCores()
 
 option_list <- list(
-  make_option(c("--num_permut"), type = "integer", default = 1, 
+  make_option(c("--num_permut"), type = "integer", default = 100, 
               help = "Number of permutations for the permutation test [default: %default]"),
   make_option(c("--delta"), type = "numeric", default = 0.5, 
               help = "Signal strength for change points [default: %default]."),
@@ -83,9 +83,10 @@ for (dim in c(1,2,3)){
   }else{
     p=c(5,15,60)[dim] # for heavy tail case
   }
+
   I<-diag(x = 1, p, p)
   Sigma=list(S1,S2,S3)[[dim]]
-  
+  dim(Sigma)
   if (type==1){
     # 1. mean diff
     Data<-rbind(mvrnorm(n1,mu=rep(0,p),Sigma=Sigma),mvrnorm(n2,mu=c(rep(delta,p)),Sigma=Sigma))
@@ -106,7 +107,7 @@ for (dim in c(1,2,3)){
   
   result_dist_profile<-foreach (i = (0:num_permut),.noexport=c('depth_CPD_cpp','depth_CPDcpp_ALL')) %dopar%{
     require(Rcpp)
-    sourceCpp("../../functions/getTcpp.cpp")
+    # sourceCpp("../../functions/getTcpp.cpp")
     sourceCpp("../../functions/depth_CPDcpp.cpp")
     sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
     if(i==0){

@@ -18,12 +18,9 @@ require("gSeg")
 require(Rcpp)
 require("kerSeg") 
 library(optparse)
-source("../functions/objTest_fctns.R")
-source("../functions/depth_CPD_func.R") 
 source("../functions/ecp_distmat_input.R")
-source("../functions/kcp_distmat_input.R")
+
 sourceCpp('../functions/energyChangePoint.cpp')
-sourceCpp("../functions/getTcpp.cpp")
 sourceCpp("../functions/depth_CPDcpp.cpp")
 sourceCpp("../functions/depth_CPDcpp_ALL.cpp")
 
@@ -45,7 +42,7 @@ for (i in 1:(dim(MIT)[3]/6)){
 distmat<-as.matrix(dist(Data , method = 'manhattan' ))
 
 ####### run depth_CPD function, and get the estimated change point location
-num_permut<-0
+num_permut<-500
 res1=depth_CPD_cpp(distmat,num_permut = num_permut)
 res_all = depth_CPDcpp_ALL(distmat,num_permut = num_permut) # dF, AD, W
 res1$loc # 94

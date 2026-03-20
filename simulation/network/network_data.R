@@ -15,12 +15,8 @@ require("gSeg")
 require(Rcpp)
 require("kerSeg") 
 library(optparse)
-source("../../functions/objTest_fctns.R")
-source("../../functions/depth_CPD_func.R") 
 source("../../functions/ecp_distmat_input.R")
-source("../../functions/kcp_distmat_input.R")
 sourceCpp('../../functions/energyChangePoint.cpp')
-sourceCpp("../../functions/getTcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
 
@@ -67,7 +63,6 @@ distmat<-as.matrix(dist( Data, method = 'manhattan' ))
 
 result_dist_profile<-foreach (i = (0:num_permut),.noexport=c('depth_CPD_cpp','depth_CPDcpp_ALL')) %dopar%{
   require(Rcpp)
-  sourceCpp("../../functions/getTcpp.cpp")
   sourceCpp("../../functions/depth_CPDcpp.cpp")
   sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
   if(i==0){

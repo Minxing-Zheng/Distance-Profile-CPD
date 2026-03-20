@@ -14,19 +14,11 @@ require("gSeg")
 require(Rcpp)
 require("kerSeg") 
 source("../../functions/ecp_distmat_input.R")
-source("../../functions/kcp_distmat_input.R")
-source("../../functions/depth_CPD_func.R")
 sourceCpp('../../functions/energyChangePoint.cpp')
-sourceCpp("../../functions/getTcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp.cpp")
-sourceCpp("../../functions/getTcpp_dF.cpp")
-sourceCpp("../../functions/depth_CPDcpp_dF.cpp")
-sourceCpp("../../functions/getTcpp_dF_AD.cpp")
-sourceCpp("../../functions/depth_CPDcpp_dF_AD.cpp")
-sourceCpp("../../functions/getTcpp_dF_W.cpp")
-sourceCpp("../../functions/depth_CPDcpp_dF_W.cpp")
+sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
 source("../../functions/gen_data.R")
-Sigma_list <- make_Sigma_list(c(30, 90, 120))
+Sigma_list <- make_Sigma_list(c(30, 90, 180))
 names(Sigma_list) <- c("S1", "S2", "S3")
 S1 <- Sigma_list$S1
 S2 <- Sigma_list$S2
@@ -127,14 +119,8 @@ for (dim_type in c(1,2,3)){
     # library(foreach)
     # library(doParallel)
     require(Rcpp)
-    sourceCpp("../../functions/getTcpp.cpp")
     sourceCpp("../../functions/depth_CPDcpp.cpp")
-    sourceCpp("../../functions/getTcpp_dF.cpp")
-    sourceCpp("../../functions/depth_CPDcpp_dF.cpp")
-    sourceCpp("../../functions/getTcpp_dF_AD.cpp")
-    sourceCpp("../../functions/depth_CPDcpp_dF_AD.cpp")
-    sourceCpp("../../functions/getTcpp_dF_W.cpp")
-    sourceCpp("../../functions/depth_CPDcpp_dF_W.cpp")
+    sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
     if(i==0){
       distmat_temp = distmat
     }else{
@@ -142,10 +128,16 @@ for (dim_type in c(1,2,3)){
       distmat_temp<-distmat[ind,ind]
     }
     
+
+    res_all = depth_CPDcpp_ALL(distmat_temp,num_permut = 0) # dF, AD, W
+    res_list <- lapply(1:3, function(i) {
+      list(loc = res_all$loc[i], observed_test_statistics = res_all$observed_stat[i])
+    })
     res1=depth_CPD_cpp(distmat_temp,num_permut = 0)
-    res2=depth_CPD_cpp_dF(distmat_temp,num_permut = 0)
-    res3=depth_CPD_cpp_dF_AD(distmat_temp,num_permut = 0)
-    res4=depth_CPD_cpp_dF_W(distmat_temp,num_permut = 0)
+    res2 <- res_list[[1]]
+    res3 <- res_list[[2]]
+    res4 <- res_list[[3]]
+    
     l = list(res1,res2,res3,res4)
     names(l)<-c('dist_cpd_uniform','dist_cpd','dist_cpd_AD','dist_cpd_W')
     l  }
