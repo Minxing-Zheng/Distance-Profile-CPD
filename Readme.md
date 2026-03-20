@@ -1,4 +1,4 @@
-# Distance-Profile-CPD: File Guide
+# Distance-Profile-CPD: Codebase Guide
 
 This short guide explains what each major file does.
 
