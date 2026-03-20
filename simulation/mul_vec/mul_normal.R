@@ -1,0 +1,158 @@
+# rm(list=ls())
+# line thinner, change legend name.
+# mmd to kernel-CP, legend.
+# include all variants 
+# response file to AE file in overleaf.
+# with AE comments, comment and response leter
+# exp(-constant*X), 1/(x^2+1)
+# 
+
+require(gtools)
+library(boot)
+library(magrittr)
+library(MASS)
+library(Hotelling)
+library(gTests)
+library(matrixStats)
+library(ade4)
+library(mvtnorm)
+# setwd(dirname(rstudioapi::getSourceEditorContext()$path))
+##### new package
+require("gSeg")
+require(Rcpp)
+require("kerSeg") 
+library(optparse)
+# source("../../functions/objTest_fctns.R")
+# source("../../functions/depth_CPD_func.R") 
+source("../../functions/ecp_distmat_input.R")
+source("../../functions/kcp_distmat_input.R")
+source("../../functions/gen_data.R")
+Sigma_list <- make_Sigma_list(c(30, 90, 120))
+names(Sigma_list) <- c("S1", "S2", "S3")
+S1 <- Sigma_list$S1
+S2 <- Sigma_list$S2
+S3 <- Sigma_list$S3
+
+sourceCpp('../../functions/energyChangePoint.cpp')
+# sourceCpp("../../functions/getTcpp.cpp")
+sourceCpp("../../functions/depth_CPDcpp.cpp")
+sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
+
+
+library(foreach)
+library(doParallel)
+cores=detectCores()
+cl <- makeCluster(min(cores[1],11)-1) #not to overload your computer
+registerDoParallel(cl=cl,cores=min(cores[1],11)-1) 
+detectCores()
+
+option_list <- list(
+  make_option(c("--num_permut"), type = "integer", default = 1, 
+              help = "Number of permutations for the permutation test [default: %default]"),
+  make_option(c("--delta"), type = "numeric", default = 0.5, 
+              help = "Signal strength for change points [default: %default]."),
+  make_option(c("--monte_carlo"), type = "numeric", default = 1, 
+              help = "Index of Monte Carlo simulations [default: %default]."),
+  make_option(c("--random_seed"), type = "numeric", default = 1, 
+              help = "Random seed Monte Carlo simulations [default: %default]."),
+  make_option(c("--change_type"), type = "numeric", default = 1, 
+              help = "type of change points: 1,2,3,4 for mean, var, mixture, tail changes [default: %default].")
+)
+
+opt <- parse_args(OptionParser(option_list = option_list))
+type<-opt$change_type
+num_permut<-opt$num_permut
+delta<-opt$delta
+monte_carlo<-opt$monte_carlo
+rand_seed<-opt$random_seed
+set.seed(rand_seed)
+
+n1=100;n2=200;n=n1+n2
+result<-list()
+for (dim in c(1,2,3)){
+
+  # There are four different cases and we have different parameters for them.
+  # so we need to change the corresponding data generation method in the code and also input parameters, i.e., this .R file and parameter.sh file 
+  
+  # 1. mean_diff: delta in seq(0,1,0.1), 
+  # 2. scale_diff: delta in seq(0,0.4,0.04), 
+  # 3. mixture gaussian: delta in seq(0,1,0.1), 
+  # 4. heavy tail: delta in seq(2,22,2)
+  if (type!=4){
+    p=c(30,90,180)[dim]  # for mean_diff, scale_diff, mixture Gaussian cases
+  }else{
+    p=c(5,15,60)[dim] # for heavy tail case
+  }
+  I<-diag(x = 1, p, p)
+  Sigma=list(S1,S2,S3)[[dim]]
+  
+  if (type==1){
+    # 1. mean diff
+    Data<-rbind(mvrnorm(n1,mu=rep(0,p),Sigma=Sigma),mvrnorm(n2,mu=c(rep(delta,p)),Sigma=Sigma))
+  }else if(type==2){
+    # 2. scale diff
+    Data<-rbind(mvrnorm(n1,mu=rep(0,p),Sigma=0.8*I),mvrnorm(n2,mu=c(rep(0,p)),Sigma=(0.8-delta)*I))
+  }else if(type==3){
+    # 3. mixture gaussian distributions
+    A<-rbinom(n2,1,0.5)
+    mu<-c(rep(delta,0.1*p),rep(0,0.9*p))
+    Z1<-mvrnorm(n2,-mu,I);Z2<-mvrnorm(n2,mu,I)
+    Data<-rbind(mvrnorm(n1,mu=rep(0,p),Sigma=I),A*Z1+(1-A)*Z2)
+  }else if(type==4){
+    # 4. heavy tailed distribution: different degrees of freedom
+    Data<-rbind(mvrnorm(n1,mu=rep(0,p),Sigma=I),matrix(rt(n2*p, df=delta),nrow=n2))
+  }
+  distmat<-as.matrix(dist( Data, method = 'euclidean' ))
+  
+  result_dist_profile<-foreach (i = (0:num_permut),.noexport=c('depth_CPD_cpp','depth_CPDcpp_ALL')) %dopar%{
+    require(Rcpp)
+    sourceCpp("../../functions/getTcpp.cpp")
+    sourceCpp("../../functions/depth_CPDcpp.cpp")
+    sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
+    if(i==0){
+      distmat_temp = distmat
+    }else{
+      ind<-sample(nrow(distmat))
+      distmat_temp<-distmat[ind,ind]
+    }
+    res_all = depth_CPDcpp_ALL(distmat_temp,num_permut = 0) # dF, AD, W
+    res_list <- lapply(1:3, function(i) {
+      list(loc = res_all$loc[i], observed_test_statistics = res_all$observed_stat[i])
+    })
+    res1=depth_CPD_cpp(distmat_temp,num_permut = 0)
+    res2 <- res_list[[1]]
+    res3 <- res_list[[2]]
+    res4 <- res_list[[3]]
+    l = list(res1,res2,res3,res4)
+    names(l)<-c('dist_cpd_uniform','dist_cpd','dist_cpd_AD','dist_cpd_W')
+    l  
+  }
+  
+  #### Graph CPD
+  E1 = mstree(dist( Data, method = 'euclidean' ),ngmax = 5)
+  result_graph = gseg1(nrow(distmat),E1, statistics="all",B = num_permut,pval.perm=TRUE)
+  #### Energy CPD
+  result_ecp<-e.divisive_distmat(D=distmat,sig.lvl=.05,R=num_permut,k=NULL,min.size=50,alpha=1)
+  #### MMD test
+  result_MMD<-c()
+  for (j in 0:num_permut){
+    if (j!=0){
+      # set.seed(j)
+      ind<-sample(nrow(distmat))
+      D<-distmat[ind,ind]
+    }else{
+      D<-distmat
+    }
+    result_mmd<-MMD_test(D)
+    loc<-which.max(result_mmd)
+    ob_stat<-result_mmd[loc]
+    result_MMD<-rbind(result_MMD,c(loc,ob_stat))
+  }
+  r<-list(result_dist_profile,result_graph,result_ecp,result_MMD)
+  names(r)<-c("dist_profile",'graph','ecp','mmd')
+  result[[dim]]=r
+}
+
+type_name<-c('mean','var','mix','tail')
+path<-paste("multi_vec_",type_name[type],'_delta_',delta,'_run_',monte_carlo,'.Rdata',sep="")
+save(result, file=path)
