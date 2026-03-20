@@ -18,7 +18,7 @@ This short guide explains what each major file does.
 - `functions/ecp_distmat_input.R`: R wrapper for ECP-style methods with distance matrix input.
 - `functions/kcp_distmat_input.R`: R wrapper for kernel CP methods with distance/kernel matrix input.
 
-## `real_data/` (applied analyses)
+## `real_data/` 
 
 ### Electricity
 - `real_data/electricity/elec_preprocess.R`: Preprocessing pipeline for raw electricity dataset.
