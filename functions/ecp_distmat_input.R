@@ -31,6 +31,8 @@ e.divisive_distmat = function(D,sig.lvl=.05,R=199,k=NULL,min.size=30,alpha=1){
   }else{R = 0} #no need to perform the permutation test
   
   ret = pvals = permutations = NULL
+  test.statistics = numeric(0)
+  permuted.statistics = list()
   changes = c(1,n+1)#list of change-points
   ret$k.hat = 1
   
@@ -44,10 +46,12 @@ e.divisive_distmat = function(D,sig.lvl=.05,R=199,k=NULL,min.size=30,alpha=1){
     con = tail(tmp,1) #newest change-point
     if(con == -1)
       break #not able to meet minimum size constraint  
-    result = sig.test(D,R,changes,min.size,Estat,env=energy) #run permutation test
-    pval = result[1] #approximate p-value
-    permutations = c(permutations,result[2]) #number of permutations performed
+    result = sig.test_detail(D,R,changes,min.size,Estat,env=energy) #run permutation test
+    pval = result$p.value #approximate p-value
+    permutations = c(permutations,result$permutations) #number of permutations performed
     pvals = c(pvals,pval) #list of computed p-values
+    test.statistics = c(test.statistics, Estat)
+    permuted.statistics[[length(permuted.statistics) + 1]] = result$permuted.statistics
     if(pval > sig.lvl)
       break #change point not significant
     changes = tmp #update set of change points
@@ -61,6 +65,8 @@ e.divisive_distmat = function(D,sig.lvl=.05,R=199,k=NULL,min.size=30,alpha=1){
   ret$considered.last = con
   ret$p.values = pvals
   ret$permutations = permutations
+  ret$test.statistics = test.statistics
+  ret$permuted.statistics = permuted.statistics
   ret$cluster = rep(1:length(diff(tmp)),diff(tmp))
   return(ret)
 }
@@ -128,6 +134,23 @@ sig.test = function(D,R,changes,min.size,obs,env=emptyenv()){
   return(c(p.val,f))
 }
 
+sig.test_detail = function(D,R,changes,min.size,obs,env=emptyenv()){
+  if(R == 0) {
+    return(list(p.value = 0, permutations = 0, permuted.statistics = numeric(0)))
+  }
+  over = 0
+  permuted.statistics = rep(NA_real_, R)
+  for(f in 1:R){
+    D1=perm.cluster(D,changes) #permute within clusters
+    tmp=e.split(changes,D1,min.size,TRUE)
+    permuted.statistics[f] = tmp[[4]]
+    if(tmp[[4]] >= obs)
+      over = over+1
+  }
+  p.val = (1+over)/(f+1)
+  return(list(p.value = p.val, permutations = f, permuted.statistics = permuted.statistics))
+}
+
 perm.cluster = function(D,points){
   points = sort(points)
   K = length(points)-1 #number of clusters
@@ -137,4 +160,3 @@ perm.cluster = function(D,points){
   }
   return(D)
 }
-
