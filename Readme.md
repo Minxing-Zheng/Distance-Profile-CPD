@@ -1,6 +1,6 @@
 # Distance-Profile Change-Point Detection
 
-This repository contains code for distance-profile change-point detection, plus baseline wrappers for energy, graph, and kernel/MMD change-point methods.
+This repository contains code for distance-profile change-point detection, plus baseline wrappers for energy, graph, kernel/MMD, and WBS-based change-point methods.
 
 The easiest entry points are:
 
@@ -49,6 +49,9 @@ res <- run_distCPD(
 )
 ```
 
+By default, permutations are now generated in R and each permuted distance
+matrix is evaluated through the C++ scan with `num_permut = 0`.
+
 The default runs all four variants:
 
 ```r
@@ -74,6 +77,80 @@ res$dist_cpd$critical_value
 ```
 
 Use `loc` as the accepted change-point estimate. It is `NA` if the method does not reject. Use `candidate_loc` for the scan maximizer, even when there is no rejection.
+
+## Permutation Engine
+
+`run_distCPD()` supports two permutation engines:
+
+- `permutation_engine = "R"`: generate permutations in R, then evaluate each
+  permuted distance matrix one at a time through the C++ scan. This is the
+  default and is the recommended choice when you want easy control over
+  permutation schemes.
+- `permutation_engine = "cpp"`: let the original C++ function generate and run
+  permutations internally.
+
+Example:
+
+```r
+res <- run_distCPD(
+  D,
+  num_permut = 200,
+  permutation_engine = "R",
+  seed = 1
+)
+```
+
+If you want the old behavior:
+
+```r
+res <- run_distCPD(
+  D,
+  num_permut = 200,
+  permutation_engine = "cpp",
+  seed = 1
+)
+```
+
+## Parallel Permutations in R
+
+When `permutation_engine = "R"`, you can parallelize over permutations with
+`foreach` and `doParallel`.
+
+```r
+res <- run_distCPD(
+  D,
+  num_permut = 200,
+  permutation_engine = "R",
+  parallel = TRUE,
+  num_cores = 10,
+  seed = 1
+)
+```
+
+This runs:
+
+- the observed distance matrix once
+- `200` permuted distance matrices
+- with up to `10` R workers
+
+If you prefer the same R-side permutation logic without parallel workers:
+
+```r
+res <- run_distCPD(
+  D,
+  num_permut = 200,
+  permutation_engine = "R",
+  parallel = FALSE,
+  seed = 1
+)
+```
+
+Notes:
+
+- `parallel = TRUE` automatically uses the R permutation engine.
+- install `foreach` and `doParallel` before using R-level parallelism.
+- R and C++ engines may give different permutation p-values for the same seed,
+  because they use different random-number generators.
 
 ## Run Selected Variants
 
@@ -131,7 +208,7 @@ for (g in c(200, 500, 1000)) {
 
 ## Run Distance-Profile and Baselines
 
-Use `run_benchmark_methods()` to run distance-profile plus energy, graph, and kernel/MMD baselines.
+Use `run_benchmark_methods()` to run distance-profile plus energy, graph, kernel/MMD, and WBS-based baselines.
 
 ```r
 source("functions/run_benchmark_methods.R")
@@ -158,6 +235,18 @@ res$dist_profile$dist_cpd_AD
 res$energy
 res$graph
 res$kernel
+```
+
+Additional WBS-based baselines can be selected with:
+
+```r
+res <- run_benchmark_methods(
+  data = X,
+  distmat = D,
+  methods = c("wbs_sn", "hdcp_wbs"),
+  num_permut = 0,
+  seed = 1
+)
 ```
 
 The baseline outputs use the same conventions:
@@ -239,7 +328,7 @@ Parallelism is over Monte Carlo replications. A single replication does not beco
 Important files:
 
 - `functions/distCPD_combined.cpp`: optimized C++ implementation for distance-profile variants.
-- `functions/baselines/`: energy, graph, and kernel baseline helpers.
+- `functions/baselines/`: energy, graph, kernel, and WBS baseline helpers.
 - `functions/data_generation/gen_data.R`: covariance-generation helper used by simulation scripts.
 - `functions/run_distCPD.R`: tutorial-friendly wrapper for distance-profile variants.
 - `functions/run_benchmark_methods.R`: common wrapper for distance-profile and baselines.
