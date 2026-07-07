@@ -14,11 +14,11 @@ require("gSeg")
 require(Rcpp)
 require("kerSeg") 
 library(optparse)
-source("../../functions/ecp_distmat_input.R")
-sourceCpp('../../functions/energyChangePoint.cpp')
+source("../../functions/baselines/ecp_distmat_input.R")
+sourceCpp('../../functions/baselines/energyChangePoint.cpp')
 sourceCpp("../../functions/depth_CPDcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
-source("../../functions/gen_data.R")
+source("../../functions/data_generation/gen_data.R")
 Sigma_list <- make_Sigma_list(c(30, 90, 180))
 names(Sigma_list) <- c("S1", "S2", "S3")
 S1 <- Sigma_list$S1
@@ -128,5 +128,4 @@ result[[1]]=r
 type_name<-c('mean','var')
 path<-paste("distr_",type_name[type],'_delta_',delta,'_run_',monte_carlo,'.Rdata',sep="")
 save(result, file=path)
-
 

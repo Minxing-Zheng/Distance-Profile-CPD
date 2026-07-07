@@ -24,16 +24,16 @@ require("kerSeg")
 library(optparse)
 # source("../../functions/objTest_fctns.R")
 # source("../../functions/depth_CPD_func.R") 
-source("../../functions/ecp_distmat_input.R")
+source("../../functions/baselines/ecp_distmat_input.R")
 # source("../../functions/kcp_distmat_input.R")
-source("../../functions/gen_data.R")
+source("../../functions/data_generation/gen_data.R")
 Sigma_list <- make_Sigma_list(c(30, 90, 180))
 names(Sigma_list) <- c("S1", "S2", "S3")
 S1 <- Sigma_list$S1
 S2 <- Sigma_list$S2
 S3 <- Sigma_list$S3
 
-sourceCpp('../../functions/energyChangePoint.cpp')
+sourceCpp('../../functions/baselines/energyChangePoint.cpp')
 # sourceCpp("../../functions/getTcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")

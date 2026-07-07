@@ -4,8 +4,8 @@ This repository contains code for distance-profile change-point detection, plus 
 
 The easiest entry points are:
 
-- `functions/run_dist_profile.R`: run the proposed distance-profile variants from a distance matrix.
-- `functions/run_all.R`: run distance-profile variants and baseline methods from a common input.
+- `functions/run_distCPD.R`: run the proposed distance-profile variants from a distance matrix.
+- `functions/run_benchmark_methods.R`: run distance-profile variants and baseline methods from a common input.
 
 ## Quick Start
 
@@ -35,12 +35,12 @@ true_cp <- n1
 
 ## Run Distance-Profile Only
 
-Use `run_dist_profile()` when you already have a distance matrix.
+Use `run_distCPD()` when you already have a distance matrix.
 
 ```r
-source("functions/run_dist_profile.R")
+source("functions/run_distCPD.R")
 
-res <- run_dist_profile(
+res <- run_distCPD(
   distmat = D,
   c = 0.1,
   num_permut = 300,
@@ -81,13 +81,13 @@ Running fewer variants can save time.
 
 ```r
 # Basic dF variant only
-res <- run_dist_profile(D, variants = "dist_cpd", num_permut = 300)
+res <- run_distCPD(D, variants = "dist_cpd", num_permut = 300)
 
 # Uniform variant only
-res <- run_dist_profile(D, variants = "dist_cpd_uniform", num_permut = 300)
+res <- run_distCPD(D, variants = "dist_cpd_uniform", num_permut = 300)
 
 # Non-uniform variants together
-res <- run_dist_profile(
+res <- run_distCPD(
   D,
   variants = c("dist_cpd", "dist_cpd_AD", "dist_cpd_W"),
   num_permut = 300
@@ -97,7 +97,7 @@ res <- run_dist_profile(
 Short aliases also work:
 
 ```r
-res <- run_dist_profile(D, variants = c("uniform", "AD"), num_permut = 300)
+res <- run_distCPD(D, variants = c("uniform", "AD"), num_permut = 300)
 ```
 
 ## The `ndSup` Argument
@@ -105,7 +105,7 @@ res <- run_dist_profile(D, variants = c("uniform", "AD"), num_permut = 300)
 `ndSup` controls the integration grid size for `dist_cpd_uniform` only.
 
 ```r
-res <- run_dist_profile(
+res <- run_distCPD(
   D,
   variants = "dist_cpd_uniform",
   ndSup = 200,
@@ -123,7 +123,7 @@ For large simulations, a useful sensitivity check is:
 
 ```r
 for (g in c(200, 500, 1000)) {
-  res <- run_dist_profile(D, variants = "dist_cpd_uniform", ndSup = g)
+  res <- run_distCPD(D, variants = "dist_cpd_uniform", ndSup = g)
   print(c(ndSup = g, p_val = res$dist_cpd_uniform$p_val,
           loc = res$dist_cpd_uniform$candidate_loc))
 }
@@ -131,12 +131,12 @@ for (g in c(200, 500, 1000)) {
 
 ## Run Distance-Profile and Baselines
 
-Use `run_all_methods()` to run distance-profile plus energy, graph, and kernel/MMD baselines.
+Use `run_benchmark_methods()` to run distance-profile plus energy, graph, and kernel/MMD baselines.
 
 ```r
-source("functions/run_all.R")
+source("functions/run_benchmark_methods.R")
 
-res <- run_all_methods(
+res <- run_benchmark_methods(
   data = X,
   distmat = D,
   c = 0.1,
@@ -238,14 +238,11 @@ Parallelism is over Monte Carlo replications. A single replication does not beco
 
 Important files:
 
-- `functions/depth_CPD_combined.cpp`: optimized C++ implementation for distance-profile variants.
-- `functions/depth_CPDcpp.cpp`: fast C++ implementation for the uniform/basic scan path.
-- `functions/depth_CPDcpp_ALL.cpp`: fast C++ implementation for dF/AD/W variants.
-- `functions/depth_CPDcpp_old_version.cpp`: previous C++ version kept for reference.
-- `functions/depth_CPDcpp_ALL_old_version.cpp`: previous C++ version kept for reference.
-- `functions/ecp_distmat_input.R`: energy-CP with distance-matrix input and saved permutation statistics.
-- `functions/run_dist_profile.R`: tutorial-friendly wrapper for distance-profile variants.
-- `functions/run_all.R`: common wrapper for distance-profile and baselines.
+- `functions/distCPD_combined.cpp`: optimized C++ implementation for distance-profile variants.
+- `functions/baselines/`: energy, graph, and kernel baseline helpers.
+- `functions/data_generation/gen_data.R`: covariance-generation helper used by simulation scripts.
+- `functions/run_distCPD.R`: tutorial-friendly wrapper for distance-profile variants.
+- `functions/run_benchmark_methods.R`: common wrapper for distance-profile and baselines.
 - `simulation/mul_vec/run_mean_p10_summary.R`: batch runner for a multivariate mean-change experiment.
 
 ## Dependencies

@@ -18,9 +18,9 @@ require("gSeg")
 require(Rcpp)
 require("kerSeg") 
 library(optparse)
-source("../functions/ecp_distmat_input.R")
+source("../functions/baselines/ecp_distmat_input.R")
 
-sourceCpp('../functions/energyChangePoint.cpp')
+sourceCpp('../functions/baselines/energyChangePoint.cpp')
 sourceCpp("../functions/depth_CPDcpp.cpp")
 sourceCpp("../functions/depth_CPDcpp_ALL.cpp")
 

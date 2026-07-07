@@ -1,7 +1,7 @@
 # Shared wrappers for distance-profile change-point scans.
 #
 # Main entry point:
-#   run_dist_profile(distmat, c = 0.1, num_permut = 500)
+#   run_distCPD(distmat, c = 0.1, num_permut = 500)
 #
 # Input:
 #   distmat: n by n pairwise distance matrix.
@@ -16,8 +16,8 @@
 #   Each method contains test_stat, permuted_test_stat, critical_value, p_val,
 #   reject, loc, candidate_loc, raw scan statistics, settings, and runtime_sec.
 
-.dist_profile_runner_env <- new.env(parent = emptyenv())
-.dist_profile_runner_env$cpp_loaded <- FALSE
+.distCPD_runner_env <- new.env(parent = emptyenv())
+.distCPD_runner_env$cpp_loaded <- FALSE
 
 .find_project_root <- function(start = getwd()) {
   path <- normalizePath(start, mustWork = TRUE)
@@ -85,8 +85,8 @@
   unique(out)
 }
 
-load_dist_profile_cpp <- function(project_root = NULL, force = FALSE) {
-  if (isTRUE(.dist_profile_runner_env$cpp_loaded) && !force) {
+load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
+  if (isTRUE(.distCPD_runner_env$cpp_loaded) && !force) {
     return(invisible(TRUE))
   }
   if (is.null(project_root)) {
@@ -97,8 +97,8 @@ load_dist_profile_cpp <- function(project_root = NULL, force = FALSE) {
   }
 
   function_dir <- file.path(project_root, "functions")
-  Rcpp::sourceCpp(file.path(function_dir, "depth_CPD_combined.cpp"), rebuild = force)
-  .dist_profile_runner_env$cpp_loaded <- TRUE
+  Rcpp::sourceCpp(file.path(function_dir, "distCPD_combined.cpp"), rebuild = force)
+  .distCPD_runner_env$cpp_loaded <- TRUE
   invisible(TRUE)
 }
 
@@ -146,16 +146,16 @@ load_dist_profile_cpp <- function(project_root = NULL, force = FALSE) {
   )
 }
 
-run_dist_profile <- function(distmat,
-                             c = 0.1,
-                             num_permut = 500,
-                             alpha = 0.05,
-                             seed = NULL,
-                             project_root = NULL,
-                             progress = TRUE,
-                             force_compile = FALSE,
-                             ndSup = 1000,
-                             variants = "all") {
+run_distCPD <- function(distmat,
+                        c = 0.1,
+                        num_permut = 500,
+                        alpha = 0.05,
+                        seed = NULL,
+                        project_root = NULL,
+                        progress = TRUE,
+                        force_compile = FALSE,
+                        ndSup = 1000,
+                        variants = "all") {
   distmat <- .validate_distmat(distmat)
   variants <- .normalize_dist_profile_variants(variants)
   n <- nrow(distmat)
@@ -169,7 +169,7 @@ run_dist_profile <- function(distmat,
     stop("ndSup must be an integer greater than or equal to 2.")
   }
 
-  load_dist_profile_cpp(project_root = project_root, force = force_compile)
+  load_distCPD_cpp(project_root = project_root, force = force_compile)
 
   runtime <- system.time({
     if (isTRUE(progress)) {
@@ -181,7 +181,7 @@ run_dist_profile <- function(distmat,
 
     method_names <- c("dist_cpd_uniform", "dist_cpd", "dist_cpd_AD", "dist_cpd_W")
     variant_mask <- method_names %in% variants
-    res_combined <- depth_CPD_combined(
+    res_combined <- distCPD_combined(
       distmat = distmat,
       c = c,
       num_permut = num_permut,
@@ -233,3 +233,6 @@ run_dist_profile <- function(distmat,
   attr(result, "variants") <- variants
   result
 }
+
+load_dist_profile_cpp <- load_distCPD_cpp
+run_dist_profile <- run_distCPD

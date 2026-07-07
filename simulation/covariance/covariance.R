@@ -17,8 +17,8 @@ require("kerSeg")
 library(ecp)
 library(optparse)
 library(pracma)
-source("../../functions/ecp_distmat_input.R")
-sourceCpp('../../functions/energyChangePoint.cpp')
+source("../../functions/baselines/ecp_distmat_input.R")
+sourceCpp('../../functions/baselines/energyChangePoint.cpp')
 sourceCpp("../../functions/depth_CPDcpp.cpp")
 sourceCpp("../../functions/depth_CPDcpp_ALL.cpp")
 
@@ -107,7 +107,7 @@ result_dist_profile<-foreach (i = (0:num_permut),.noexport=c('depth_CPD_cpp','de
 }
 #### Graph CPD
 E1 = mstree(dist( Data, method = 'euclidean' ),ngmax = 5)
-result_graph = gseg1(nrow(distmat),E1, statistics="g",B = num_permut,pval.perm=TRUE)
+result_graph = gseg1(nrow(distmat),E1, statistics="g",B = num_permut,pval.perm=True)
 #### Energy CPD
 result_ecp<-e.divisive_distmat(D=distmat,sig.lvl=.05,R=num_permut,k=NULL,min.size=50,alpha=1)
 #### MMD test

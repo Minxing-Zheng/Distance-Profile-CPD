@@ -126,7 +126,7 @@ summarize_results <- function(detail) {
 args <- parse_args(commandArgs(trailingOnly = TRUE))
 project_root <- find_project_root()
 setwd(project_root)
-source(file.path("functions", "run_all.R"))
+source(file.path("functions", "run_benchmark_methods.R"))
 
 dir.create(args$out_dir, recursive = TRUE, showWarnings = FALSE)
 
@@ -151,7 +151,7 @@ run_one <- function(run_id) {
     " B=", args$num_permut
   )
 
-  res <- run_all_methods(
+  res <- run_benchmark_methods(
     data = data,
     distmat = distmat,
     c = 0.1,
