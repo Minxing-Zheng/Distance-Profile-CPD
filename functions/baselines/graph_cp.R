@@ -74,6 +74,13 @@ run_graph_cp <- function(data = NULL,
   if (!is.null(graph_perm$maxZs)) {
     permuted_test_stat <- graph_perm$maxZs
     critical_value <- unname(stats::quantile(permuted_test_stat, probs = 1 - alpha, type = 1, names = FALSE))
+    # gSeg can report p = 0 when the observed maximum exceeds every
+    # permutation. Use the same finite-sample plus-one correction as the
+    # other permutation wrappers so p-values and rejection flags agree.
+    if (!is.na(test_stat)) {
+      p_val <- (1 + sum(permuted_test_stat >= test_stat)) /
+        (1 + length(permuted_test_stat))
+    }
   }
   reject <- if (!is.na(p_val)) {
     p_val <= alpha

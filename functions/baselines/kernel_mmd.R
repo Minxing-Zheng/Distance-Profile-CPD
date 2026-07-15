@@ -68,7 +68,7 @@ run_kernel_mmd <- function(distmat,
   } else {
     unname(stats::quantile(permuted_test_stat, probs = 1 - alpha, type = 1, names = FALSE))
   }
-  reject <- if (is.na(critical_value)) NA else test_stat > critical_value
+  reject <- if (is.na(p_val)) NA else p_val <= alpha
   candidate_loc <- unname(stats[1, "loc"])
   loc <- if (isTRUE(reject)) candidate_loc else NA_integer_
 

@@ -1,0 +1,3 @@
+scenario_id,generator,mc,n,tau,p,signal,null,c,num_permut,alpha,min_size,methods,variants,ndsup,base_seed,covariance
+mean_null_n300,gaussian_mean,20,300,0.333333,10,0,true,0.1,99,0.05,50,dist_profile;energy;graph;kernel,dist_cpd;dist_cpd_AD;dist_cpd_W,200,20260712,spectral
+mean_alt_n300,gaussian_mean,20,300,0.333333,10,0.5,false,0.1,99,0.05,50,dist_profile;energy;graph;kernel,dist_cpd;dist_cpd_AD;dist_cpd_W,200,20270712,spectral

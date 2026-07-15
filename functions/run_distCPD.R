@@ -150,7 +150,38 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   )
 }
 
-.make_permutation_index_matrix <- function(n, num_permut, seed = NULL) {
+.draw_permutation_index <- function(n, scheme, block_length) {
+  if (scheme == "iid") {
+    return(sample.int(n))
+  }
+  if (scheme == "circular") {
+    s <- sample.int(n - 1L, 1L)
+    return(((seq_len(n) - 1L + s) %% n) + 1L)
+  }
+  if (scheme == "block") {
+    n_blocks <- max(2L, ceiling(n / block_length))
+    block_id <- rep(seq_len(n_blocks), each = block_length)[seq_len(n)]
+    block_order <- sample.int(n_blocks)
+    return(unlist(lapply(block_order, function(b) which(block_id == b)), use.names = FALSE))
+  }
+  stop("Unknown permutation scheme: ", scheme, ". Use iid, block, or circular.")
+}
+
+# Permutation index generator for the null reference distribution. `scheme`
+# controls what gets randomized:
+#   iid:      sample.int(n) - every point independently reassigned. Valid only
+#             under full exchangeability (i.i.d. data).
+#   block:    contiguous blocks of length `block_length` are kept intact and
+#             only their order is shuffled, preserving within-block serial
+#             dependence (permutation analogue of the block bootstrap).
+#   circular: a single random cyclic shift of the whole sequence, preserving
+#             the entire dependence structure except at one wrap-around seam.
+# Only the index vector changes; the reindexed distance matrix is fed into the
+# same scan-statistic computation regardless of scheme.
+.make_permutation_index_matrix <- function(n, num_permut, seed = NULL,
+                                            scheme = c("iid", "block", "circular"),
+                                            block_length = NULL) {
+  scheme <- match.arg(scheme)
   perms <- matrix(
     rep.int(seq_len(n), num_permut + 1L),
     nrow = n,
@@ -158,6 +189,9 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   )
   if (num_permut == 0L) {
     return(perms)
+  }
+  if (scheme == "block" && is.null(block_length)) {
+    block_length <- max(2L, round(n^(1 / 3)))
   }
 
   old_seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
@@ -176,7 +210,7 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   }
 
   for (b in seq_len(num_permut)) {
-    perms[, b + 1L] <- sample.int(n)
+    perms[, b + 1L] <- .draw_permutation_index(n, scheme, block_length)
   }
   perms
 }
@@ -221,12 +255,16 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
                                         seed,
                                         project_root,
                                         parallel,
-                                        num_cores) {
+                                        num_cores,
+                                        permutation_scheme = "iid",
+                                        block_length = NULL) {
   n <- nrow(distmat)
   perms <- .make_permutation_index_matrix(
     n = n,
     num_permut = num_permut,
-    seed = seed
+    seed = seed,
+    scheme = permutation_scheme,
+    block_length = block_length
   )
 
   load_distCPD_cpp(project_root = project_root)
@@ -301,17 +339,26 @@ run_distCPD <- function(distmat,
                         project_root = NULL,
                         progress = TRUE,
                         force_compile = FALSE,
-                        ndSup = 1000,
+                        ndSup = 200,
                         variants = "all",
                         permutation_engine = c("R", "cpp"),
                         parallel = FALSE,
-                        num_cores = 1L) {
+                        num_cores = 1L,
+                        permutation_scheme = c("iid", "block", "circular"),
+                        block_length = NULL) {
   if (is.null(project_root)) {
     project_root <- .find_project_root()
   }
   distmat <- .validate_distmat(distmat)
   variants <- .normalize_dist_profile_variants(variants)
   permutation_engine <- match.arg(permutation_engine)
+  permutation_scheme <- match.arg(permutation_scheme)
+  if (identical(permutation_engine, "cpp") && !identical(permutation_scheme, "iid")) {
+    permutation_engine <- "R"
+    if (isTRUE(progress)) {
+      message("permutation_scheme != 'iid' switches permutation_engine to 'R' (block/circular schemes are only implemented in the R engine).")
+    }
+  }
   n <- nrow(distmat)
   if (c <= 0 || c >= 0.5) {
     stop("c must be in (0, 0.5).")
@@ -397,7 +444,9 @@ run_distCPD <- function(distmat,
         seed = if (is.null(seed)) NULL else as.integer(seed),
         project_root = project_root,
         parallel = parallel,
-        num_cores = as.integer(num_cores)
+        num_cores = as.integer(num_cores),
+        permutation_scheme = permutation_scheme,
+        block_length = block_length
       )
       stats_matrix <- as.matrix(stats_matrix)
       colnames(stats_matrix) <- stats_colnames

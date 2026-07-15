@@ -59,6 +59,8 @@ source_run_distCPD <- function(project_root = NULL) {
   source(file.path(baseline_dir, "energy_cp.R"))
   source(file.path(baseline_dir, "kernel_mmd.R"))
   source(file.path(baseline_dir, "graph_cp.R"))
+  source(file.path(baseline_dir, "wbs_sn_cp.R"))
+  source(file.path(baseline_dir, "hdcp_wbs.R"))
   invisible(TRUE)
 }
 
@@ -76,9 +78,9 @@ run_benchmark_methods <- function(data = NULL,
                                   num_permut = 500,
                                   alpha = 0.05,
                                   min_size = 50,
-                                  methods = c("dist_profile", "energy", "graph", "kernel"),
+                            methods = c("dist_profile", "energy", "graph", "kernel"),
                                   dist_profile_variants = "all",
-                                  dist_profile_ndSup = 1000,
+                                  dist_profile_ndSup = 200,
                                   seed = NULL,
                                   project_root = NULL,
                                   progress = TRUE) {
@@ -86,6 +88,9 @@ run_benchmark_methods <- function(data = NULL,
     distmat <- .compute_distmat(data, distance_method = distance_method)
   } else {
     distmat <- .run_all_validate_distmat(distmat)
+  }
+  if (any(c("wbs_sn", "hdcp_wbs") %in% methods) && is.null(data)) {
+    stop("data is required for WBS-based baseline methods.")
   }
   .load_baseline_helpers(project_root)
 
@@ -133,6 +138,24 @@ run_benchmark_methods <- function(data = NULL,
       alpha = alpha,
       seed = if (is.null(seed)) NULL else seed + 100000L,
       progress = progress
+    )
+  }
+
+  if ("wbs_sn" %in% methods) {
+    out$wbs_sn <- run_wbs_sn_cp(
+      data = data,
+      alpha = alpha,
+      num_permut = num_permut,
+      seed = if (is.null(seed)) 100L else seed + 200000L
+    )
+  }
+
+  if ("hdcp_wbs" %in% methods) {
+    out$hdcp_wbs <- run_hdcp_wbs(
+      data = data,
+      alpha = alpha,
+      num_permut = num_permut,
+      seed = if (is.null(seed)) 1L else seed + 300000L
     )
   }
 

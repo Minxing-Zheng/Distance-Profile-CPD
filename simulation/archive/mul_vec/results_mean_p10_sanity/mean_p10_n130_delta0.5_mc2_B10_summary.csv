@@ -1,0 +1,8 @@
+"method","monte_carlo","rejection_rate","conditional_mae","conditional_median_ae","candidate_mae","mean_runtime_sec"
+"dist_cpd",2,0,NA,NA,2.5,5.2915
+"dist_cpd_AD",2,0,NA,NA,2.5,5.2915
+"dist_cpd_W",2,0,NA,NA,2.5,5.2915
+"dist_cpd_uniform",2,0,NA,NA,2.5,5.2915
+"energy",2,0,NA,NA,3.5,0.0219999999999985
+"graph",2,1,19.5,19.5,19.5,0.0184999999999995
+"kernel",2,1,2.5,2.5,2.5,0.0764999999999976

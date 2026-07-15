@@ -1,3 +1,5 @@
 Sigma_*.RData
 simulation/mul_vec/results_*/
 simulation/mul_vec/*_timing.csv
+simulation/results/
+simulation/logs/

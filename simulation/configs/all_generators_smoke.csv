@@ -1,0 +1,10 @@
+scenario_id,generator,mc,n,tau,p,signal,null,c,num_permut,alpha,min_size,methods,variants,ndsup,base_seed,covariance,rho,grid_size,object_size
+gen_mean,gaussian_mean,1,60,0.333333,5,0.5,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,101,identity,,,
+gen_scale,gaussian_scale,1,60,0.333333,5,0.1,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,102,identity,,,
+gen_mixture,gaussian_mixture,1,60,0.333333,5,0.8,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,103,identity,,,
+gen_tail,gaussian_tail,1,60,0.333333,5,5,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,104,identity,,,
+gen_covariance,gaussian_covariance,1,60,0.333333,5,0.8,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,105,identity,,,
+gen_ar_mean,ar_mean,1,60,0.333333,5,0.5,false,0.1,3,0.05,10,dist_profile;energy;kernel,dist_cpd,30,106,identity,0.3,,
+gen_distribution_location,distributional_location,1,40,0.5,2,0.5,false,0.1,3,0.05,8,dist_profile;energy;kernel,dist_cpd,30,107,identity,,15,
+gen_distribution_scale,distributional_scale,1,40,0.5,2,0.1,false,0.1,3,0.05,8,dist_profile;energy;kernel,dist_cpd,30,108,identity,,15,
+gen_network,network_pa,1,40,0.5,2,0.5,false,0.1,3,0.05,8,dist_profile;energy;kernel,dist_cpd,30,109,identity,,,20

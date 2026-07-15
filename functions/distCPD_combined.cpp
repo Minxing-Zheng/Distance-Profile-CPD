@@ -280,7 +280,7 @@ inline void all_stats_from_state(const NumericMatrix& D,
 List distCPD_combined(const NumericMatrix& distmat,
                       double c = 0.1,
                       int num_permut = 500,
-                      int ndSup = 1000,
+                      int ndSup = 200,
                       int seed = -1,
                       Nullable<LogicalVector> variants = R_NilValue) {
   const int n = distmat.nrow();

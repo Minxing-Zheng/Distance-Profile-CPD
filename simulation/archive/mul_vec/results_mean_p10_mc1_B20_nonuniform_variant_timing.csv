@@ -1,0 +1,5 @@
+"label","variants","B","wall_elapsed_sec","approx_B100_sec","candidate_locs","p_values"
+"dist_cpd_only","dist_cpd",20,28.423,136.701095238095,"100","0.0476"
+"dist_cpd_AD_only","dist_cpd_AD",20,55.591,267.366238095238,"100","0.0476"
+"dist_cpd_W_only","dist_cpd_W",20,54.88,263.946666666667,"100","0.0476"
+"dF_AD_W_joint","dist_cpd+dist_cpd_AD+dist_cpd_W",20,64.494,310.185428571429,"100/100/100","0.0476/0.0476/0.0476"
