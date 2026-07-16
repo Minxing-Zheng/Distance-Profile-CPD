@@ -3,3 +3,6 @@ simulation/mul_vec/results_*/
 simulation/mul_vec/*_timing.csv
 simulation/results/
 simulation/logs/
+functions/baselines/code_object_valued_CP.zip
+functions/baselines/code.zip
+functions/baselines/.DS_Store
