@@ -77,11 +77,11 @@
 
 # Default threshold recalibrated for n=300, M=50, p=10 (alpha=0.05, iid
 # Gaussian null, 1000 replicates - see simulation/wbs_threshold_calibration.R
-# and simulation/wbs_threshold_calibration_n300.csv, computed under this
-# file's former name hdcp_wbs.R; the math is identical so the value carries
-# over unchanged). Recalibrate for other n/M/p.
+# and simulation/wbs_threshold_calibration_n300.csv). Recalibrated after the
+# floor/round and degenerate-segment fixes in wbs_common.R (previous value,
+# 26.49393, was computed on the pre-fix .frechet_tn and is stale).
 run_sn2_cp <- function(data,
-                       threshold = 26.49393,
+                       threshold = 26.007588,
                        M = 50,
                        min_size = 20,
                        seed = 1,

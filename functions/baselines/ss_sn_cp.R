@@ -96,12 +96,13 @@
 
 # Default threshold recalibrated for n=300, M=50, p=10 (alpha=0.05, iid
 # Gaussian null, 1000 replicates - see simulation/wbs_threshold_calibration.R
-# and simulation/wbs_threshold_calibration_n300.csv, computed under this
-# file's former name wbs_sn_cp.R; the math is identical so the value carries
-# over unchanged). The original 9.756101 was calibrated for n=96 (see
-# code_object_valued_CP.zip, WBS_critic_value.R) and corresponds to only the
-# ~92nd percentile at n=300 (true alpha approx 0.08, not 0.05). Recalibrate
-# for other n/M/p.
+# and simulation/wbs_threshold_calibration_n300.csv). Reconfirmed after the
+# floor/round and degenerate-segment fixes in wbs_common.R (SS-SN's own
+# statistic was never affected by either bug, so the value is unchanged to
+# 5 decimal places from its pre-fix calibration). The original 9.756101 was
+# calibrated for n=96 (see code_object_valued_CP.zip, WBS_critic_value.R)
+# and corresponds to only the ~92nd percentile at n=300 (true alpha approx
+# 0.08, not 0.05). Recalibrate for other n/M/p.
 run_ss_sn_cp <- function(data,
                          threshold = 10.288973,
                          M = 50,

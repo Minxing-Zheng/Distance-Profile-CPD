@@ -72,8 +72,9 @@
 
 # Default threshold calibrated for n=300, M=50, p=10 (alpha=0.05, iid
 # Gaussian null, 1000 replicates - see simulation/wbs_threshold_calibration.R
-# and simulation/wbs_threshold_calibration_n300.csv). Recalibrate for other
-# n/M/p.
+# and simulation/wbs_threshold_calibration_n300.csv, computed after the
+# floor/round and degenerate-segment fixes in wbs_common.R). Recalibrate for
+# other n/M/p.
 run_sn1_cp <- function(data,
                        threshold = NULL,
                        M = 50,
@@ -83,7 +84,7 @@ run_sn1_cp <- function(data,
                        trim_fraction = 0.05,
                        alpha = 0.05,
                        num_permut = 0) {
-  if (is.null(threshold)) threshold <- 15.19  # placeholder until calibration run completes
+  if (is.null(threshold)) threshold <- 119.637769
   data <- as.matrix(data)
   n <- nrow(data)
   intervals <- .wbs_intervals(n, M = M, min_size = min_size, seed = seed)
