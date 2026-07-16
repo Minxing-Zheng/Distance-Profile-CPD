@@ -150,32 +150,73 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   )
 }
 
+.validate_block_length <- function(n, block_length, min_blocks = 8L) {
+  if (!is.numeric(block_length) || length(block_length) != 1L ||
+      !is.finite(block_length) || block_length != round(block_length) || block_length < 1L) {
+    stop("block_length must be a single finite positive integer, got: ", format(block_length))
+  }
+  block_length <- as.integer(round(block_length))
+  if (block_length > n) {
+    stop("block_length (", block_length, ") cannot exceed n (", n, ").")
+  }
+  n_blocks <- max(2L, min(n, round(n / block_length)))
+  if (n_blocks < min_blocks) {
+    warning(
+      "block_length=", block_length, " leaves only ", n_blocks, " blocks for n=", n,
+      " (fewer than the recommended minimum of ", min_blocks, "); size/power may be unstable."
+    )
+  }
+  block_length
+}
+
+# Balanced contiguous block sizes for n points: n_blocks blocks whose sizes
+# differ by at most 1, rather than (n_blocks - 1) full-length blocks plus one
+# short remainder block. n_blocks is chosen as round(n / block_length) so the
+# realized average block size stays close to the requested block_length.
+.block_sizes <- function(n, block_length) {
+  n_blocks <- max(2L, min(n, round(n / block_length)))
+  base_size <- n %/% n_blocks
+  remainder <- n %% n_blocks
+  sizes <- rep(base_size, n_blocks)
+  if (remainder > 0L) sizes[seq_len(remainder)] <- sizes[seq_len(remainder)] + 1L
+  sizes
+}
+
 .draw_permutation_index <- function(n, scheme, block_length) {
   if (scheme == "iid") {
     return(sample.int(n))
   }
-  if (scheme == "circular") {
-    s <- sample.int(n - 1L, 1L)
-    return(((seq_len(n) - 1L + s) %% n) + 1L)
-  }
   if (scheme == "block") {
-    n_blocks <- max(2L, ceiling(n / block_length))
-    block_id <- rep(seq_len(n_blocks), each = block_length)[seq_len(n)]
-    block_order <- sample.int(n_blocks)
+    sizes <- .block_sizes(n, block_length)
+    block_id <- rep(seq_along(sizes), times = sizes)
+    block_order <- sample.int(length(sizes))
     return(unlist(lapply(block_order, function(b) which(block_id == b)), use.names = FALSE))
   }
-  stop("Unknown permutation scheme: ", scheme, ". Use iid, block, or circular.")
+  stop("Unknown permutation scheme for .draw_permutation_index: ", scheme, ". Use iid or block.")
 }
 
 # Permutation index generator for the null reference distribution. `scheme`
 # controls what gets randomized:
 #   iid:      sample.int(n) - every point independently reassigned. Valid only
 #             under full exchangeability (i.i.d. data).
-#   block:    contiguous blocks of length `block_length` are kept intact and
-#             only their order is shuffled, preserving within-block serial
-#             dependence (permutation analogue of the block bootstrap).
-#   circular: a single random cyclic shift of the whole sequence, preserving
-#             the entire dependence structure except at one wrap-around seam.
+#   block:    contiguous blocks (balanced sizes, differing by at most one
+#             point when block_length does not evenly divide n) are kept
+#             intact and only their order is shuffled, preserving within-block
+#             serial dependence. See Kirch (2006), "Block Permutation
+#             Principles for the Change Analysis of Dependent Data", for the
+#             asymptotic justification (both block length and block count
+#             growing), rather than treating this as a direct application of
+#             the Kunsch (1989) block bootstrap.
+#   circular: a cyclic shift of the whole sequence. There are only n-1
+#             distinct nonidentity shifts, so these are enumerated exactly
+#             when num_permut >= n-1, or sampled WITHOUT replacement
+#             otherwise - never drawn independently with replacement per
+#             column, which would waste permutations on duplicate shifts and
+#             understate the true resolution of the reference distribution.
+#             Validity itself is not automatic from stationarity alone (the
+#             observed/identity sequence has no wrap seam while every
+#             nonidentity shift introduces exactly one); treat as a secondary
+#             sensitivity check, not the primary calibration.
 # Only the index vector changes; the reindexed distance matrix is fed into the
 # same scan-statistic computation regardless of scheme.
 .make_permutation_index_matrix <- function(n, num_permut, seed = NULL,
@@ -190,8 +231,10 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   if (num_permut == 0L) {
     return(perms)
   }
-  if (scheme == "block" && is.null(block_length)) {
-    block_length <- max(2L, round(n^(1 / 3)))
+  if (scheme == "block") {
+    block_length <- .validate_block_length(
+      n, if (is.null(block_length)) max(2L, round(n^(1 / 3))) else block_length
+    )
   }
 
   old_seed_exists <- exists(".Random.seed", envir = .GlobalEnv, inherits = FALSE)
@@ -207,6 +250,30 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
       }
     }, add = TRUE)
     set.seed(seed)
+  }
+
+  if (scheme == "circular") {
+    max_distinct <- n - 1L
+    if (num_permut > max_distinct) {
+      warning(
+        "num_permut=", num_permut, " exceeds the ", max_distinct,
+        " distinct nonidentity circular shifts available for n=", n,
+        "; using all ", max_distinct, " shifts once each instead of the requested count."
+      )
+    }
+    shifts <- if (num_permut >= max_distinct) {
+      seq_len(max_distinct)
+    } else {
+      sample.int(max_distinct, num_permut)
+    }
+    # Truncate to 1 (identity) + length(shifts) columns rather than padding
+    # unused columns with silent identity duplicates, which would corrupt the
+    # null with fake observed-equals-observed ties.
+    perms <- perms[, seq_len(length(shifts) + 1L), drop = FALSE]
+    for (b in seq_along(shifts)) {
+      perms[, b + 1L] <- ((seq_len(n) - 1L + shifts[b]) %% n) + 1L
+    }
+    return(perms)
   }
 
   for (b in seq_len(num_permut)) {
@@ -266,6 +333,9 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
     scheme = permutation_scheme,
     block_length = block_length
   )
+  # ncol(perms) can be less than num_permut + 1 for circular permutation when
+  # num_permut exceeds the n-1 distinct nonidentity shifts available.
+  n_columns <- ncol(perms)
 
   load_distCPD_cpp(project_root = project_root)
 
@@ -281,7 +351,7 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
   }
 
   if (!parallel || num_cores <= 1L || num_permut == 0L) {
-    results <- lapply(seq_len(num_permut + 1L), run_one)
+    results <- lapply(seq_len(n_columns), run_one)
   } else {
     if (!requireNamespace("foreach", quietly = TRUE)) {
       stop("Package 'foreach' is required when parallel = TRUE and permutation_engine = 'R'.")
@@ -311,7 +381,7 @@ load_distCPD_cpp <- function(project_root = NULL, force = FALSE) {
     on.exit(doParallel::stopImplicitCluster(), add = TRUE)
 
     results <- foreach::foreach(
-      idx = seq_len(num_permut + 1L),
+      idx = seq_len(n_columns),
       .combine = rbind,
       .packages = "Rcpp",
       .export = c(".run_distCPD_single_permutation")
@@ -360,6 +430,11 @@ run_distCPD <- function(distmat,
     }
   }
   n <- nrow(distmat)
+  if (identical(permutation_scheme, "block")) {
+    block_length <- .validate_block_length(
+      n, if (is.null(block_length)) max(2L, round(n^(1 / 3))) else block_length
+    )
+  }
   if (c <= 0 || c >= 0.5) {
     stop("c must be in (0, 0.5).")
   }
@@ -474,6 +549,13 @@ run_distCPD <- function(distmat,
   attr(result, "permutation_engine") <- permutation_engine
   attr(result, "parallel") <- parallel
   attr(result, "num_cores") <- num_cores
+  attr(result, "permutation_scheme") <- permutation_scheme
+  attr(result, "block_length") <- if (identical(permutation_scheme, "block")) block_length else NA_integer_
+  attr(result, "n_blocks") <- if (identical(permutation_scheme, "block")) {
+    length(.block_sizes(n, block_length))
+  } else {
+    NA_integer_
+  }
   result
 }
 

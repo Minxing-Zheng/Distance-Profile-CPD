@@ -28,8 +28,8 @@ Supported generators are:
 - `distributional_scale`
 - `network_pa`
 
-Supported methods are `dist_profile`, `energy`, `graph`, `kernel`, `wbs_sn`,
-and `hdcp_wbs`. Separate multiple-change-point experiments should use a
+Supported methods are `dist_profile`, `energy`, `graph`, `kernel`, `sn1`,
+`sn2`, and `ss_sn`. Separate multiple-change-point experiments should use a
 dedicated runner because their output and performance metrics differ.
 
 ## Local smoke test

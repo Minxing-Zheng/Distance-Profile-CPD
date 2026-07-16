@@ -59,8 +59,10 @@ source_run_distCPD <- function(project_root = NULL) {
   source(file.path(baseline_dir, "energy_cp.R"))
   source(file.path(baseline_dir, "kernel_mmd.R"))
   source(file.path(baseline_dir, "graph_cp.R"))
-  source(file.path(baseline_dir, "wbs_sn_cp.R"))
-  source(file.path(baseline_dir, "hdcp_wbs.R"))
+  source(file.path(baseline_dir, "wbs_common.R"))
+  source(file.path(baseline_dir, "sn1_cp.R"))
+  source(file.path(baseline_dir, "sn2_cp.R"))
+  source(file.path(baseline_dir, "ss_sn_cp.R"))
   invisible(TRUE)
 }
 
@@ -81,6 +83,8 @@ run_benchmark_methods <- function(data = NULL,
                             methods = c("dist_profile", "energy", "graph", "kernel"),
                                   dist_profile_variants = "all",
                                   dist_profile_ndSup = 200,
+                                  dist_profile_permutation_scheme = "iid",
+                                  dist_profile_block_length = NULL,
                                   seed = NULL,
                                   project_root = NULL,
                                   progress = TRUE) {
@@ -89,8 +93,8 @@ run_benchmark_methods <- function(data = NULL,
   } else {
     distmat <- .run_all_validate_distmat(distmat)
   }
-  if (any(c("wbs_sn", "hdcp_wbs") %in% methods) && is.null(data)) {
-    stop("data is required for WBS-based baseline methods.")
+  if (any(c("sn1", "sn2", "ss_sn") %in% methods) && is.null(data)) {
+    stop("data is required for the SN1/SN2/SS-SN baseline methods.")
   }
   .load_baseline_helpers(project_root)
 
@@ -107,7 +111,9 @@ run_benchmark_methods <- function(data = NULL,
       project_root = project_root,
       progress = progress,
       variants = dist_profile_variants,
-      ndSup = dist_profile_ndSup
+      ndSup = dist_profile_ndSup,
+      permutation_scheme = dist_profile_permutation_scheme,
+      block_length = dist_profile_block_length
     )
   }
 
@@ -141,21 +147,30 @@ run_benchmark_methods <- function(data = NULL,
     )
   }
 
-  if ("wbs_sn" %in% methods) {
-    out$wbs_sn <- run_wbs_sn_cp(
+  if ("sn1" %in% methods) {
+    out$sn1 <- run_sn1_cp(
       data = data,
       alpha = alpha,
       num_permut = num_permut,
-      seed = if (is.null(seed)) 100L else seed + 200000L
+      seed = if (is.null(seed)) 2L else seed + 400000L
     )
   }
 
-  if ("hdcp_wbs" %in% methods) {
-    out$hdcp_wbs <- run_hdcp_wbs(
+  if ("sn2" %in% methods) {
+    out$sn2 <- run_sn2_cp(
       data = data,
       alpha = alpha,
       num_permut = num_permut,
       seed = if (is.null(seed)) 1L else seed + 300000L
+    )
+  }
+
+  if ("ss_sn" %in% methods) {
+    out$ss_sn <- run_ss_sn_cp(
+      data = data,
+      alpha = alpha,
+      num_permut = num_permut,
+      seed = if (is.null(seed)) 100L else seed + 200000L
     )
   }
 

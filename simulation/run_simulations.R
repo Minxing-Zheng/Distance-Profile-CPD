@@ -52,7 +52,8 @@ with_default_columns <- function(config) {
     c = 0.1, num_permut = 99L, alpha = 0.05, min_size = 50L,
     methods = "dist_profile;energy;graph;kernel",
     variants = "dist_cpd;dist_cpd_AD;dist_cpd_W", ndsup = 200L,
-    base_seed = 20260712L
+    base_seed = 20260712L,
+    permutation_scheme = "iid", block_length = ""
   )
   for (name in names(defaults)) {
     if (!name %in% names(config)) config[[name]] <- defaults[[name]]
@@ -94,16 +95,32 @@ atomic_save_rds <- function(x, path) {
 }
 
 run_one_method <- function(method, generated, distmat, cfg, test_seed, project_root) {
-  methods <- c("dist_profile", "energy", "graph", "kernel", "wbs_sn", "hdcp_wbs")
+  methods <- c("dist_profile", "energy", "graph", "kernel", "sn1", "sn2", "ss_sn")
   if (!method %in% methods) stop("Unknown method: ", method)
   set.seed(test_seed)
   elapsed <- system.time({
+    # sn1/sn2/ss_sn ship with hardcoded asymptotic thresholds (see their
+    # source) used only when num_permut=0; forcing that here regardless of
+    # cfg$num_permut keeps them on their built-in calibration rather than
+    # silently switching to a permutation loop shared with dist_profile.
+    method_num_permut <- if (method %in% c("sn1", "sn2", "ss_sn")) {
+      0L
+    } else {
+      as.integer(cfg$num_permut)
+    }
     answer <- run_benchmark_methods(
       data = generated$data, distmat = distmat,
-      c = as.numeric(cfg$c), num_permut = as.integer(cfg$num_permut),
+      c = as.numeric(cfg$c), num_permut = method_num_permut,
       alpha = as.numeric(cfg$alpha), min_size = as.integer(cfg$min_size),
       methods = method, dist_profile_variants = split_names(cfg$variants, "dist_cpd"),
-      dist_profile_ndSup = as.integer(cfg$ndsup), seed = test_seed,
+      dist_profile_ndSup = as.integer(cfg$ndsup),
+      dist_profile_permutation_scheme = as.character(cfg$permutation_scheme),
+      dist_profile_block_length = if (is.na(cfg$block_length) || cfg$block_length == "") {
+        NULL
+      } else {
+        as.integer(cfg$block_length)
+      },
+      seed = test_seed,
       project_root = project_root, progress = FALSE
     )
   })[["elapsed"]]
@@ -176,7 +193,7 @@ distance_runtime <- system.time({
 requested_methods <- split_names(cfg$methods, c("dist_profile", "energy", "graph", "kernel"))
 seed_offsets <- c(
   dist_profile = 100000L, energy = 200000L, graph = 300000L,
-  kernel = 400000L, wbs_sn = 500000L, hdcp_wbs = 600000L
+  kernel = 400000L, sn1 = 500000L, sn2 = 600000L, ss_sn = 700000L
 )
 tidy <- list()
 raw <- list()

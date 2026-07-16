@@ -237,17 +237,21 @@ res$graph
 res$kernel
 ```
 
-Additional WBS-based baselines can be selected with:
+Additional self-normalized WBS baselines can be selected with:
 
 ```r
 res <- run_benchmark_methods(
   data = X,
   distmat = D,
-  methods = c("wbs_sn", "hdcp_wbs"),
+  methods = c("sn1", "sn2", "ss_sn"),
   num_permut = 0,
   seed = 1
 )
 ```
+
+`sn1`/`sn2` are from Jiang, Zhu, and Shao (2024); `ss_sn` is from Zhang,
+Zhu, and Shao (2026) - see `functions/baselines/README.md` for the exact
+correspondence.
 
 The baseline outputs use the same conventions:
 
